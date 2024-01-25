@@ -1,38 +1,41 @@
 trigger:
-- main
- 
+  - main
+
 pool:
   Superman
- 
+
 jobs:
-- job: DeployDjangoAppJob
-  displayName: 'Deploy Django Application'
-  steps:
-  - checkout: self
- 
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      addToPath: true
- 
-  - script: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-    displayName: 'Install Python Dependencies'
- 
-  - script: |
-      python manage.py migrate
-      python manage.py collectstatic --noinput
-    displayName: 'Django Database Migration and Static Files Collection'
- 
-  - script: |
-      python manage.py test
-    displayName: 'Run Django Tests'
- 
-  - script: |
-      echo "export GITHUB_TOKEN=$GITHUB_TOKEN" >> ~/.bashrc
-      source ~/.bashrc
-      gunicorn weatherapp.wsgi:application
-    displayName: 'Run Gunicorn Server'
-    env:
-      GITHUB_TOKEN: $(GITHUB_TOKEN)
+  - job: DeployDjangoAppJob
+    displayName: 'Deploy Django Application'
+    steps:
+      - name: Set up GitHub Token
+        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - checkout: self
+
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.8'
+          addToPath: true
+
+      - script: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        displayName: 'Install Python Dependencies'
+
+      - script: |
+          python manage.py migrate
+          python manage.py collectstatic --noinput
+        displayName: 'Django Database Migration and Static Files Collection'
+
+      - script: |
+          python manage.py test
+        displayName: 'Run Django Tests'
+
+      - script: |
+          echo "export GITHUB_TOKEN=$GITHUB_TOKEN" >> ~/.bashrc
+          source ~/.bashrc
+          gunicorn weatherapp.wsgi:application
+        displayName: 'Run Gunicorn Server'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
